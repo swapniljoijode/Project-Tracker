@@ -13,7 +13,10 @@
     "test": "jest",
     "test:replication": "jest --testPathPattern=replication",
     "seed": "tsx scripts/seed.ts",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
