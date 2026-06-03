@@ -1,0 +1,35 @@
+# sync-template.yml — DATA pipeline
+# Runs when tracker_tasks.yaml changes. Upserts phases and tasks in the
+# datastore. Never deploys the application. Never triggers a rebuild.
+#
+# Required GitHub secret: DATABASE_URL
+
+name: Sync Template
+
+on:
+  push:
+    branches: [main]
+    paths: [tracker_tasks.yaml]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync tracker_tasks.yaml → datastore
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run sync
+        run: npm run sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
