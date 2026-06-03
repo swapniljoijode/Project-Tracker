@@ -2,7 +2,7 @@
 
 *Development Plan, Companion to the Fashion Retail Intelligence Platform*
 
-Prepared for Swapnil Joijode | Version 1.0 | June 2026
+Prepared for Swapnil S Joijode | Version 1.0 | June 2026
 
 ---
 
