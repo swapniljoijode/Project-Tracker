@@ -1,0 +1,35 @@
+repos:
+  # ── General file hygiene ────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  # ── Secrets detection ───────────────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+
+  # ── TypeScript / JavaScript ─────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        language: node
+        entry: npx eslint --max-warnings=0
+        types: [ts, tsx, javascript]
+        pass_filenames: true
+
+      - id: prettier
+        name: Prettier
+        language: node
+        entry: npx prettier --check
+        types_or: [ts, tsx, javascript, json, yaml, markdown, css]
+        pass_filenames: true

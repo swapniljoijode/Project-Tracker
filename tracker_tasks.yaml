@@ -1,0 +1,116 @@
+# tracker_tasks.yaml — versioned single source of truth for all phases and tasks.
+# This file is the contract between the project plan and the tracker datastore.
+# Rules:
+#   - Never reuse or renumber stable task IDs (id fields). History depends on them.
+#   - Add tasks here; never hand-edit the datastore directly.
+#   - The sync pipeline upserts from this file — re-running is always safe.
+version: 1
+project: project-tracker
+phases:
+  - id: T0
+    name: Foundation and Version Control
+    tasks:
+      - id: T0-1
+        title: Initialize repository with protected main
+      - id: T0-2
+        title: Scaffold Next.js app with TypeScript
+      - id: T0-3
+        title: Configure ESLint and Prettier
+      - id: T0-4
+        title: Add pre-commit hooks
+      - id: T0-5
+        title: Create Makefile with all targets
+      - id: T0-6
+        title: Add .env.example and secrets documentation
+      - id: T0-7
+        title: Add Docker baseline and Compose stack
+
+  - id: T1
+    name: Data Model and Migration Template Schema
+    tasks:
+      - id: T1-1
+        title: Model entities — project, phase, task, task_event, run
+      - id: T1-2
+        title: Define migration template schema with stable identifiers
+      - id: T1-3
+        title: Document idempotent upsert rules
+
+  - id: T2
+    name: Datastore and API
+    tasks:
+      - id: T2-1
+        title: Provision Neon Postgres and apply schema migrations
+      - id: T2-2
+        title: Build API route handlers — list tasks, create event, progress summary
+      - id: T2-3
+        title: Protect write endpoints with API token
+
+  - id: T3
+    name: Control Surfaces
+    tasks:
+      - id: T3-1
+        title: Build CLI with commander — task start, done, fail, phase status
+      - id: T3-2
+        title: Make CLI scriptable and exit-code aware
+      - id: T3-3
+        title: Document all commands with examples
+
+  - id: T4
+    name: Template Sync Pipeline
+    tasks:
+      - id: T4-1
+        title: Build sync job that upserts from template via API
+      - id: T4-2
+        title: Wire GitHub Actions trigger on template change
+      - id: T4-3
+        title: Report created, updated, and unchanged counts
+
+  - id: T5
+    name: Web Interface and Charts
+    tasks:
+      - id: T5-1
+        title: Build phase and task views with status display
+      - id: T5-2
+        title: Wire status controls to the API
+      - id: T5-3
+        title: Add completion and event charts with Recharts
+
+  - id: T6
+    name: Export Engine
+    tasks:
+      - id: T6-1
+        title: Implement Excel, CSV, and TSV exports with SheetJS
+      - id: T6-2
+        title: Implement slide deck export with PptxGenJS
+      - id: T6-3
+        title: Add one-click download controls to the interface
+
+  - id: T7
+    name: Containerization and Replication Testing
+    tasks:
+      - id: T7-1
+        title: Finalize Docker Compose stack with test runner
+      - id: T7-2
+        title: Build multi-round replication harness
+      - id: T7-3
+        title: Pass identical-state assertions across rounds in CI
+
+  - id: T8
+    name: CI/CD and Deployment
+    tasks:
+      - id: T8-1
+        title: Build application pipeline — lint, test, build, deploy to Vercel
+      - id: T8-2
+        title: Confirm template sync pipeline is separate from deployment pipeline
+      - id: T8-3
+        title: Gate merges on green application pipeline
+
+  - id: T9
+    name: Integration With the Retail Project
+    tasks:
+      - id: T9-1
+        title: Seed tracker from retail project migration template
+      - id: T9-2
+        title: Emit status from retail pipeline via tracker CLI or API
+      - id: T9-3
+        title: Verify exports reflect live retail project progress

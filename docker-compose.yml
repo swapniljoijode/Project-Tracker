@@ -1,0 +1,54 @@
+services:
+  # ── Application ─────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://tracker:tracker@db:5432/tracker?sslmode=disable
+      TRACKER_API_TOKEN: dev_token_replace_in_prod
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+  # ── Postgres (local dev and replication tests only) ──────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tracker
+      POSTGRES_PASSWORD: tracker
+      POSTGRES_DB: tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Replication test runner ──────────────────────────────────────────────────
+  test:
+    build:
+      context: .
+      target: test
+    environment:
+      DATABASE_URL: postgresql://tracker:tracker@db:5432/tracker?sslmode=disable
+      TRACKER_API_URL: http://app:3000
+      TRACKER_API_TOKEN: dev_token_replace_in_prod
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - test
+
+volumes:
+  db_data:
