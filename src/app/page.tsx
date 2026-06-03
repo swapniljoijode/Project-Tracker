@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { PhaseCard } from "@/components/PhaseCard";
 import { PhaseProgressChart } from "@/components/PhaseProgressChart";
 import { StatusDonut } from "@/components/StatusDonut";
+import { ExportButtons } from "@/components/ExportButtons";
 import type { PhaseProgress } from "@/lib/types";
 
 const PROJECT_ID = "project-tracker";
@@ -136,6 +137,20 @@ export default async function Home() {
           </h2>
           <StatusDonut ongoing={totals.ongoing} success={totals.success} failure={totals.failure} />
         </div>
+      </div>
+
+      {/* Exports */}
+      <div
+        style={{
+          marginBottom: 32,
+          background: "#111",
+          border: "1px solid #222",
+          borderRadius: 10,
+          padding: "16px 20px",
+        }}
+      >
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: "#888", margin: "0 0 12px" }}>EXPORT</h2>
+        <ExportButtons />
       </div>
 
       {/* Phase grid */}
