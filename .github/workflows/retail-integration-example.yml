@@ -1,0 +1,53 @@
+# retail-integration-example.yml
+#
+# This file shows how the Fashion Retail Intelligence Platform pipeline
+# reports status to the Project Tracker. Copy this pattern into the retail
+# project's own CI/CD workflow — do NOT use it in this repository.
+#
+# Every stage that completes calls the tracker CLI to record ongoing,
+# success, or failure. The two codebases stay independent; they integrate
+# only through the tracker API.
+#
+# Required secrets in the RETAIL project's repository:
+#   TRACKER_API_URL    https://project-tracker.vercel.app
+#   TRACKER_API_TOKEN  same token as TRACKER_API_TOKEN in the tracker
+
+name: "[EXAMPLE] Retail project → tracker integration"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    env:
+      TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+      TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+
+    steps:
+      # ── Seed retail tasks (run once, or on every push that changes retail_tasks.yaml) ──
+      - name: Seed retail project into tracker
+        run: |
+          npx tsx scripts/seed-retail.ts retail_tasks.yaml
+
+      # ── Example pipeline stage: start a task ─────────────────────────────────
+      - name: Mark P0-T1 ongoing
+        run: npx tsx cli/index.ts task start P0-T1 --note "pipeline started"
+
+      # ── Your actual pipeline work goes here ─────────────────────────────────
+
+      # ── Mark done on success ─────────────────────────────────────────────────
+      - name: Mark P0-T1 done
+        if: success()
+        run: |
+          npx tsx cli/index.ts task done P0-T1 \
+            --note "completed" \
+            --link "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # ── Mark failed on failure ────────────────────────────────────────────────
+      - name: Mark P0-T1 failed
+        if: failure()
+        run: |
+          npx tsx cli/index.ts task fail P0-T1 \
+            --note "pipeline failed" \
+            --link "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
