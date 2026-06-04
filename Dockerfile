@@ -48,4 +48,5 @@ FROM base AS test
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=test
-CMD ["npm", "run", "test:replication"]
+# Run migrations first, then the replication harness
+CMD ["sh", "-c", "npm run db:migrate && npm test"]
