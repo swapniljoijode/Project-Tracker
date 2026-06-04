@@ -81,11 +81,13 @@ export default function Header({
 
         <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-2" />
 
-        {/* User avatar — replace with <img> once user provides image */}
         <div className="relative group">
-          <div className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-black text-xs font-bold cursor-pointer ring-offset-2 hover:ring-2 hover:ring-black dark:hover:ring-white">
-            SJ
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/avatar.jpg"
+            alt="Swapnil Joijode"
+            className="w-9 h-9 rounded-full object-cover cursor-pointer border border-zinc-200 dark:border-zinc-700 ring-offset-2 hover:ring-2 hover:ring-black dark:hover:ring-white"
+          />
           <div className="hidden group-hover:block absolute right-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl p-3 text-xs z-50">
             <p className="font-bold text-zinc-900 dark:text-zinc-100">Swapnil Joijode</p>
             <p className="text-zinc-400 text-[10px] truncate mb-2">swapniljoijode22@gmail.com</p>

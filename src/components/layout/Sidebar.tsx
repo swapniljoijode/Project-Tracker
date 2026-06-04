@@ -55,10 +55,12 @@ export default function Sidebar() {
       {/* User */}
       <div className="px-6 mt-auto">
         <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
-          {/* Avatar placeholder — replace src with user image */}
-          <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-black text-xs font-bold shrink-0">
-            SJ
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/avatar.jpg"
+            alt="Swapnil Joijode"
+            className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-200 dark:border-zinc-700"
+          />
           <div className="overflow-hidden">
             <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
               Swapnil Joijode
