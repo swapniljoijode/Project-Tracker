@@ -2,16 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "devCommand": "npm run dev",
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "TRACKER_API_TOKEN": "@tracker-api-token"
-  },
-  "build": {
-    "env": {
-      "DATABASE_URL": "@database-url",
-      "TRACKER_API_TOKEN": "@tracker-api-token",
-      "NEXT_PUBLIC_APP_URL": "@next-public-app-url"
-    }
-  }
+  "devCommand": "npm run dev"
 }
