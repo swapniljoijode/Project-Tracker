@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db, projects, phases, tasks } from "@/db";
 import { eq, sql } from "drizzle-orm";
 import { PhaseCard } from "@/components/PhaseCard";
