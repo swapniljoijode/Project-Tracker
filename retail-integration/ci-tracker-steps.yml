@@ -1,0 +1,132 @@
+# ci-tracker-steps.yml
+# These steps add Project Tracker status reporting to the retail repo's ci.yml.
+# Add the TRACKER_* secrets to the retail repo's GitHub Actions secrets, then
+# merge these steps into the corresponding jobs in .github/workflows/ci.yml.
+#
+# Required GitHub secrets in the RETAIL repo:
+#   TRACKER_API_URL    https://project-tracker-lyart-seven.vercel.app
+#   TRACKER_API_TOKEN  SJWOAIPJNOIDLE
+#
+# How to use:
+#   Copy the relevant env block and steps into each job in ci.yml.
+#   The "start" step goes BEFORE the job's main work.
+#   The "success" step uses `if: success()`.
+#   The "failure" step uses `if: failure()`.
+
+# ── Helper shell function (paste into run: blocks) ───────────────────────────
+# tracker() {
+#   local task_id=$1 status=$2 note=$3
+#   curl -sf -X POST "$TRACKER_API_URL/api/tasks/$task_id/events" \
+#     -H "Content-Type: application/json" \
+#     -H "x-tracker-token: $TRACKER_API_TOKEN" \
+#     -d "{\"status\":\"$status\",\"note\":\"$note\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
+# }
+
+# ── Lint job additions ────────────────────────────────────────────────────────
+lint_job_additions:
+  env:
+    TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+    TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+  steps:
+    - name: "Tracker: lint started"
+      if: always()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P7-1/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"ongoing\",\"note\":\"CI lint stage started\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+    - name: "Tracker: lint passed"
+      if: success()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P7-1/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"success\",\"note\":\"ruff + black + sqlfluff passed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+    - name: "Tracker: lint failed"
+      if: failure()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P7-1/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"failure\",\"note\":\"Lint stage failed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+# ── Unit test job additions ───────────────────────────────────────────────────
+unit_test_job_additions:
+  env:
+    TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+    TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+  steps:
+    - name: "Tracker: unit tests passed"
+      if: success()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P2-6/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"success\",\"note\":\"pytest unit tests passed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+    - name: "Tracker: unit tests failed"
+      if: failure()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P2-6/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"failure\",\"note\":\"pytest unit tests failed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+# ── Integration smoke test job additions ─────────────────────────────────────
+# Smoke test covers: generate → bronze → dbt build → gold assertions
+smoke_test_job_additions:
+  env:
+    TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+    TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+  steps:
+    - name: "Tracker: smoke test (dbt build) passed"
+      if: success()
+      run: |
+        for task in P3-4 P3-5 P4-2 P4-3 P4-4 P4-5 P6-3 P6-4; do
+          curl -sf -X POST "$TRACKER_API_URL/api/tasks/$task/events" \
+            -H "Content-Type: application/json" \
+            -H "x-tracker-token: $TRACKER_API_TOKEN" \
+            -d "{\"status\":\"success\",\"note\":\"Integration smoke test passed (generate→bronze→dbt→gold)\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+        done
+
+    - name: "Tracker: smoke test failed"
+      if: failure()
+      run: |
+        curl -sf -X POST "$TRACKER_API_URL/api/tasks/P6-3/events" \
+          -H "Content-Type: application/json" \
+          -H "x-tracker-token: $TRACKER_API_TOKEN" \
+          -d "{\"status\":\"failure\",\"note\":\"Integration smoke test failed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+
+# ── Docker build job additions ────────────────────────────────────────────────
+docker_build_job_additions:
+  env:
+    TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+    TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+  steps:
+    - name: "Tracker: Docker build passed"
+      if: success()
+      run: |
+        for task in P6-1 P6-2 P7-4; do
+          curl -sf -X POST "$TRACKER_API_URL/api/tasks/$task/events" \
+            -H "Content-Type: application/json" \
+            -H "x-tracker-token: $TRACKER_API_TOKEN" \
+            -d "{\"status\":\"success\",\"note\":\"Docker image build passed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true
+        done
+
+# ── Scheduled pipeline additions (scheduled.yml) ─────────────────────────────
+# Add to the full-pipeline job in scheduled.yml after dbt build succeeds
+scheduled_pipeline_additions:
+  env:
+    TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+    TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+  steps:
+    - name: "Tracker: scheduled full pipeline passed"
+      if: success()
+      run: |
+        for task in P3-1 P3-2 P3-3 P3-4 P3-5 P4-4 P4-5 P7-3; do
+          curl -sf -X POST "$TRACKER_API_URL/api/tasks/$task/events" \
+            -H "Content-Type: application/json" \
+            -H "x-tracker-token: $TRACKER_API_TOKEN" \
+            -d "{\"status\":\"success\",\"note\":\"Weekly full pipeline: generate→bronze→dbt→gold→export passed\",\"artifactLink\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}" || true

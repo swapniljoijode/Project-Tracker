@@ -1,0 +1,63 @@
+# tracker-sync.yml
+# Place this file at: .github/workflows/tracker-sync.yml in the retail repo.
+#
+# DATA pipeline — syncs tracker_tasks.yaml to the Project Tracker.
+# Runs on:
+#   1. Every push to main that changes tracker_tasks.yaml (immediate)
+#   2. Every 6 hours on a schedule (drift protection, aligned with freshness check)
+#
+# Required GitHub secrets in the RETAIL repo:
+#   TRACKER_API_URL    https://project-tracker-lyart-seven.vercel.app
+#   TRACKER_API_TOKEN  SJWOAIPJNOIDLE
+
+name: Tracker Sync
+
+on:
+  push:
+    branches: [main]
+    paths: [tracker_tasks.yaml]
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync tracker_tasks.yaml → Project Tracker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Register project and sync template
+        env:
+          TRACKER_API_URL: ${{ secrets.TRACKER_API_URL }}
+          TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+        run: |
+          set -e
+
+          # 1. Register the retail project
+          echo "Registering project..."
+          curl -sf -X POST "$TRACKER_API_URL/api/projects" \
+            -H "Content-Type: application/json" \
+            -H "x-tracker-token: $TRACKER_API_TOKEN" \
+            -d '{
+              "id": "fashion-retail-intelligence",
+              "name": "Fashion Retail Intelligence Platform",
+              "repository": "https://github.com/swapniljoijode/Retail-Fashion-Intelligence",
+              "templateVersion": 1
+            }' | jq '.'
+
+          # 2. Sync the template
+          echo "Syncing template..."
+          TEMPLATE=$(cat tracker_tasks.yaml | python3 -c "
+          import sys, json, yaml
+          data = yaml.safe_load(sys.stdin.read())
+          print(json.dumps(data))
+          ")
+
+          curl -sf -X POST "$TRACKER_API_URL/api/sync" \
+            -H "Content-Type: application/json" \
+            -H "x-tracker-token: $TRACKER_API_TOKEN" \
+            -d "$TEMPLATE" | jq '.'
+
+          echo "Sync complete."

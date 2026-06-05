@@ -1,0 +1,154 @@
+# tracker_tasks.yaml — Fashion Retail Intelligence Platform
+# Single source of truth for all phases and tasks.
+# This file lives in the retail repo root.
+# The tracker-sync.yml workflow syncs it to the Project Tracker on every change.
+#
+# Rules:
+#   - Never reuse or renumber stable task IDs. History depends on them.
+#   - Add tasks here; never hand-edit the tracker datastore directly.
+#   - Sync is idempotent — re-running is always safe.
+
+version: 1
+project: fashion-retail-intelligence
+phases:
+  - id: P0
+    name: Charter and Foundation
+    tasks:
+      - id: P0-1
+        title: Initialize Git repository with monorepo layout
+      - id: P0-2
+        title: Create Python environment with uv and pin dependencies
+      - id: P0-3
+        title: Add pre-commit with ruff, black, and sqlfluff
+      - id: P0-4
+        title: Write Makefile exposing standard commands
+      - id: P0-5
+        title: Establish secrets handling with .env and python-dotenv
+      - id: P0-6
+        title: Author the project charter
+      - id: P0-7
+        title: Author the tracker migration template
+
+  - id: P1
+    name: Dimensional Model and Metric Dictionary
+    tasks:
+      - id: P1-1
+        title: State the business questions each of the five marts must answer
+      - id: P1-2
+        title: Design the conformed dimensions
+      - id: P1-3
+        title: Design the fact tables with explicit grain statements
+      - id: P1-4
+        title: Write the metric dictionary
+      - id: P1-5
+        title: Produce an entity relationship diagram
+      - id: P1-6
+        title: Review the model against the business questions
+
+  - id: P2
+    name: Synthetic Data Generation in Python
+    tasks:
+      - id: P2-1
+        title: Build the dimension generators using Faker
+      - id: P2-2
+        title: Build the fact generators with seasonality and behavior
+      - id: P2-3
+        title: Make volume configurable for different use cases
+      - id: P2-4
+        title: Inject controlled dirtiness into the dataset
+      - id: P2-5
+        title: Write outputs as date-partitioned Parquet
+      - id: P2-6
+        title: Cover the generators with pytest
+
+  - id: P3
+    name: Raw Storage and Bronze Ingestion
+    tasks:
+      - id: P3-1
+        title: Create R2 buckets and configure S3-compatible credentials
+      - id: P3-2
+        title: Upload Parquet to R2 with boto3
+      - id: P3-3
+        title: Create Snowflake external stage and COPY INTO bronze tables
+      - id: P3-4
+        title: Read Parquet into DuckDB bronze tables
+      - id: P3-5
+        title: Validate land-to-bronze row counts and log ingestion runs
+
+  - id: P4
+    name: Transformations — Silver and Gold with dbt
+    tasks:
+      - id: P4-1
+        title: Initialize the dbt project with dual Snowflake and DuckDB targets
+      - id: P4-2
+        title: Build staging models with stg_ prefix
+      - id: P4-3
+        title: Build intermediate models with int_ prefix
+      - id: P4-4
+        title: Build gold marts with dim_ and fct_ prefixes
+      - id: P4-5
+        title: Test with dbt built-ins and dbt-expectations (212 assertions)
+      - id: P4-6
+        title: Document every model and generate dbt docs
+
+  - id: P5
+    name: Orchestration with Airflow and Cosmos
+    tasks:
+      - id: P5-1
+        title: Run Airflow locally with official Docker Compose
+      - id: P5-2
+        title: Build the DAG covering the full pipeline workflow
+      - id: P5-3
+        title: Use astronomer-cosmos to render dbt as native Airflow tasks
+      - id: P5-4
+        title: Set dependencies, retries, and scheduling
+      - id: P5-5
+        title: Demonstrate a backfill and document the procedure
+
+  - id: P6
+    name: Containerization and Testing
+    tasks:
+      - id: P6-1
+        title: Containerize the Python generation and ingestion service
+      - id: P6-2
+        title: Compose the stack with all supporting services
+      - id: P6-3
+        title: Layer the tests — pytest, dbt tests, and smoke tests
+      - id: P6-4
+        title: Ensure parity between local and CI environments
+
+  - id: P7
+    name: CI/CD with GitHub Actions
+    tasks:
+      - id: P7-1
+        title: Define the pipeline with lint, test, build, and dbt run stages
+      - id: P7-2
+        title: Store credentials as masked GitHub Actions secrets
+      - id: P7-3
+        title: Add a scheduled pipeline for weekly full-pipeline run
+      - id: P7-4
+        title: Gate merges into main on a green pipeline
+      - id: P7-5
+        title: Emit task status to the Project Tracker API on each stage
+
+  - id: P8
+    name: Serving Layer and Dashboard App
+    tasks:
+      - id: P8-1
+        title: Export gold marts to served snapshot in R2
+      - id: P8-2
+        title: Build the Next.js app with serverless route handlers
+      - id: P8-3
+        title: Design five domain views for different business functions
+      - id: P8-4
+        title: Deploy to Vercel Hobby or Cloudflare Pages
+
+  - id: P9
+    name: Observability, Images, and Documentation
+    tasks:
+      - id: P9-1
+        title: Build an image pipeline using openly licensed sources
+      - id: P9-2
+        title: Add Elementary for data observability reporting
+      - id: P9-3
+        title: Publish documentation via MkDocs
