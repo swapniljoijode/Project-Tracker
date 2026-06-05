@@ -9,8 +9,32 @@ import { GitFork, Star, Users, BookOpen, ArrowUpRight, Activity } from "lucide-r
 import Link from "next/link";
 import type { PhaseProgress } from "@/lib/types";
 
-const PROJECT_ID = "project-tracker";
 const GITHUB_USER = "swapniljoijode";
+
+async function getAllTrackedProjects() {
+  const allProjects = await db.query.projects.findMany();
+  return Promise.all(
+    allProjects.map(async (p) => {
+      const rows = await db
+        .select({
+          total: sql<number>`count(${tasks.id})::int`,
+          success: sql<number>`count(${tasks.id}) filter (where ${tasks.currentStatus} = 'success')::int`,
+          failure: sql<number>`count(${tasks.id}) filter (where ${tasks.currentStatus} = 'failure')::int`,
+          ongoing: sql<number>`count(${tasks.id}) filter (where ${tasks.currentStatus} = 'ongoing')::int`,
+          phaseCount: sql<number>`count(distinct ${phases.id})::int`,
+        })
+        .from(phases)
+        .leftJoin(tasks, eq(tasks.phaseId, phases.id))
+        .where(eq(phases.projectId, p.id));
+      const r = rows[0] ?? { total: 0, success: 0, failure: 0, ongoing: 0, phaseCount: 0 };
+      return {
+        ...p,
+        ...r,
+        pct: r.total > 0 ? Math.round((r.success / r.total) * 100) : 0,
+      };
+    })
+  );
+}
 
 async function getGitHubProfile() {
   try {
@@ -42,8 +66,8 @@ async function getRecentRepos() {
   }
 }
 
-async function getTrackerProgress() {
-  const project = await db.query.projects.findFirst({ where: eq(projects.id, PROJECT_ID) });
+async function getProjectPhases(projectId: string) {
+  const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId) });
   if (!project) return null;
 
   const rows = await db
@@ -58,7 +82,7 @@ async function getTrackerProgress() {
     })
     .from(phases)
     .leftJoin(tasks, eq(tasks.phaseId, phases.id))
-    .where(eq(phases.projectId, PROJECT_ID))
+    .where(eq(phases.projectId, projectId))
     .groupBy(phases.id, phases.name, phases.order)
     .orderBy(phases.order);
 
@@ -91,25 +115,30 @@ function StatCard({
 }
 
 export default async function Home() {
-  const [ghProfile, repos, trackerData] = await Promise.all([
+  const [ghProfile, repos, trackedProjects] = await Promise.all([
     getGitHubProfile(),
     getRecentRepos(),
-    getTrackerProgress(),
+    getAllTrackedProjects(),
   ]);
 
-  const totals = trackerData
-    ? trackerData.phases.reduce(
-        (acc, p) => ({
-          total: acc.total + p.total,
-          ongoing: acc.ongoing + p.ongoing,
-          success: acc.success + p.success,
-          failure: acc.failure + p.failure,
-        }),
-        { total: 0, ongoing: 0, success: 0, failure: 0 }
-      )
-    : { total: 0, ongoing: 0, success: 0, failure: 0 };
+  // Load phases for each tracked project
+  const projectsWithPhases = await Promise.all(
+    trackedProjects.map(async (p) => ({
+      ...p,
+      phaseData: await getProjectPhases(p.id),
+    }))
+  );
 
-  const overallPct = totals.total > 0 ? Math.round((totals.success / totals.total) * 100) : 0;
+  // Aggregate totals across ALL tracked projects
+  const grandTotals = trackedProjects.reduce(
+    (acc, p) => ({
+      total: acc.total + p.total,
+      success: acc.success + p.success,
+      ongoing: acc.ongoing + p.ongoing,
+      failure: acc.failure + p.failure,
+    }),
+    { total: 0, success: 0, ongoing: 0, failure: 0 }
+  );
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -144,99 +173,86 @@ export default async function Home() {
         </div>
       )}
 
-      {/* GitHub stats */}
+      {/* GitHub + portfolio stats */}
       {ghProfile && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Public Repos" value={ghProfile.public_repos} icon={BookOpen} />
           <StatCard label="Followers" value={ghProfile.followers} icon={Users} />
-          <StatCard label="Following" value={ghProfile.following} icon={Activity} />
+          <StatCard label="Projects Tracked" value={trackedProjects.length} icon={GitFork} />
           <StatCard
-            label="Tracker Progress"
-            value={`${overallPct}%`}
-            icon={GitFork}
-            sub={`${totals.success}/${totals.total} tasks done`}
+            label="Tasks Complete"
+            value={`${grandTotals.success}/${grandTotals.total}`}
+            icon={Activity}
+            sub={`${grandTotals.ongoing} ongoing · ${grandTotals.failure} failed`}
           />
         </div>
       )}
 
-      {/* Tracker progress + charts */}
-      {trackerData && (
-        <>
-          {/* Overall bar */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl">
-            <div className="flex justify-between mb-3 text-sm">
-              <span className="font-bold text-zinc-700 dark:text-zinc-300">
-                Project Tracker build progress
-              </span>
-              <span className="font-mono font-bold">{overallPct}%</span>
-            </div>
-            <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                style={{ width: `${overallPct}%` }}
-              />
-            </div>
-            <div className="mt-3 flex gap-5 text-xs text-zinc-500">
-              <span className="text-emerald-500 font-semibold">✓ {totals.success} done</span>
-              <span className="text-red-500 font-semibold">✗ {totals.failure} failed</span>
-              <span className="text-blue-500 font-semibold">● {totals.ongoing} ongoing</span>
-              <span className="ml-auto">{totals.total} total</span>
-            </div>
-          </div>
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 mb-4">
-                Completion by phase
-              </h3>
-              <PhaseProgressChart phases={trackerData.phases} />
-            </div>
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 mb-4">
-                Status breakdown
-              </h3>
-              <StatusDonut
-                ongoing={totals.ongoing}
-                success={totals.success}
-                failure={totals.failure}
-              />
-            </div>
-          </div>
-
-          {/* Phase grid */}
-          <div>
-            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 mb-3">
-              Phases
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {trackerData.phases.map((phase) => {
-                const pct = phase.total > 0 ? Math.round((phase.success / phase.total) * 100) : 0;
-                return (
+      {/* Per-project progress sections */}
+      {projectsWithPhases.map(
+        ({ id, name, repository, pct, total, success, ongoing, failure, phaseData }) => (
+          <div key={id} className="space-y-4">
+            {/* Project header */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
                   <Link
-                    key={phase.id}
-                    href={`/phases/${phase.id}`}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                    href={`/projects/${id}`}
+                    className="text-base font-bold text-zinc-900 dark:text-white hover:text-black dark:hover:text-zinc-300 transition-colors"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-mono text-xs font-bold text-zinc-400">{phase.id}</span>
-                      <span className="text-xs font-bold text-emerald-500">{pct}%</span>
-                    </div>
-                    <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate mb-3">
-                      {phase.name}
-                    </p>
-                    <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+                    {name}
                   </Link>
-                );
-              })}
+                  <a
+                    href={repository}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-blue-500 mt-0.5"
+                  >
+                    {repository.replace("https://github.com/", "")}{" "}
+                    <ArrowUpRight className="w-3 h-3" />
+                  </a>
+                </div>
+                <Link
+                  href={`/projects/${id}`}
+                  className="text-xs font-bold text-zinc-500 hover:text-black dark:hover:text-white flex items-center gap-1 shrink-0"
+                >
+                  View all phases <ArrowUpRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex gap-4 text-xs text-zinc-500">
+                <span className="font-mono font-bold">{pct}%</span>
+                <span className="text-emerald-500 font-semibold">✓ {success} done</span>
+                <span className="text-red-500 font-semibold">✗ {failure} failed</span>
+                <span className="text-blue-500 font-semibold">● {ongoing} ongoing</span>
+                <span className="ml-auto">{total} total</span>
+              </div>
             </div>
+
+            {/* Phase chart + donut */}
+            {phaseData && (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 mb-4">
+                    {name} — completion by phase
+                  </h3>
+                  <PhaseProgressChart phases={phaseData.phases} />
+                </div>
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 mb-4">
+                    Status breakdown
+                  </h3>
+                  <StatusDonut ongoing={ongoing} success={success} failure={failure} />
+                </div>
+              </div>
+            )}
           </div>
-        </>
+        )
       )}
 
       {/* Recent GitHub repos */}

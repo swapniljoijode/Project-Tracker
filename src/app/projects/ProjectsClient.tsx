@@ -111,7 +111,7 @@ export default function ProjectsClient({
                     <span className="text-blue-500 font-semibold">● {p.ongoing}</span>
                   </div>
                   <Link
-                    href={`/phases/T0`}
+                    href={`/projects/${p.id}`}
                     className="flex items-center gap-1 font-bold hover:text-black dark:hover:text-white transition-colors"
                   >
                     View <ArrowUpRight className="w-3 h-3" />
