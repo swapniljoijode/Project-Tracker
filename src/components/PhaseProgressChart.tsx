@@ -47,6 +47,7 @@ export function PhaseProgressChart({ phases }: Props) {
           cursor={{ fill: "#ffffff08" }}
           contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8 }}
           labelStyle={{ color: "#aaa" }}
+          itemStyle={{ color: "#e4e4e7" }}
           formatter={(_v, _n, props) => {
             const p = (props as { payload?: BarEntry }).payload;
             return [`${p?.pct ?? 0}% (${p?.success ?? 0}/${p?.total ?? 0})`, "Complete"];

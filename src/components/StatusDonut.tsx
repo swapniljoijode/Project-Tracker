@@ -54,6 +54,8 @@ export function StatusDonut({ ongoing, success, failure }: Props) {
         </Pie>
         <Tooltip
           contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8 }}
+          labelStyle={{ color: "#aaa" }}
+          itemStyle={{ color: "#e4e4e7" }}
           formatter={(_v, name, entry) => [`${entry.payload.value} tasks`, name]}
         />
         <Legend
